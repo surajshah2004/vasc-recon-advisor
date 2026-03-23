@@ -297,8 +297,13 @@ with col1:
 
 with col2:
     st.markdown('<p class="section-label">API key</p>', unsafe_allow_html=True)
-    api_key = st.text_input("Anthropic API key", type="password",
-                            help="Your key stays in-session only, never stored.")
+    # Try to load from Streamlit secrets, fall back to manual entry
+    try:
+        api_key = st.secrets["ANTHROPIC_API_KEY"]
+        st.success("🔑 API key loaded", icon="✅")
+    except:
+        api_key = st.text_input("Anthropic API key", type="password",
+                                help="Your key stays in-session only, never stored.")
     st.markdown("")
     analyze_btn = st.button("🔍 Analyze Case", use_container_width=True, type="primary")
 
