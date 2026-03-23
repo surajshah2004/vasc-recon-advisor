@@ -166,87 +166,74 @@ with st.sidebar:
     sample_names = ["— select —"] + [c["name"] for c in SAMPLE_CASES]
     chosen_sample = st.selectbox("Sample cases", sample_names, label_visibility="collapsed")
 
-    # Populate defaults from sample or autofill
-    def get_default(field, fallback):
-        # Autofill from narrative takes priority
+    # Populate defaults from sample or autofill — safe version
+    def get_default(field, fallback, options=None):
+        val = None
         if f"autofill_{field}" in st.session_state:
-            return st.session_state[f"autofill_{field}"]
-        if chosen_sample and chosen_sample != "— select —":
+            val = st.session_state[f"autofill_{field}"]
+        elif chosen_sample and chosen_sample != "— select —":
             case = next((c for c in SAMPLE_CASES if c["name"] == chosen_sample), None)
             if case:
-                return case.get(field, fallback)
-        return fallback
+                val = case.get(field, fallback)
+        if val is None:
+            return fallback
+        # If options provided, verify value is valid — fall back if not
+        if options is not None and val not in options:
+            return fallback
+        return val
+
+    def safe_index(options, field, fallback):
+        val = get_default(field, fallback, options)
+        return options.index(val) if val in options else options.index(fallback)
 
     st.markdown("---")
     st.markdown('<p class="section-label">Demographics</p>', unsafe_allow_html=True)
-    age = st.number_input("Age", 18, 100, value=get_default("age", 65))
-    sex = st.selectbox("Sex", ["Male", "Female", "Other/Not specified"],
-                       index=["Male","Female","Other/Not specified"].index(get_default("sex","Male")))
+    age_default = get_default("age", 65)
+    age = st.number_input("Age", 18, 100, value=int(age_default) if str(age_default).isdigit() or isinstance(age_default, int) else 65)
+    sex_opts = ["Male", "Female", "Other/Not specified"]
+    sex = st.selectbox("Sex", sex_opts, index=safe_index(sex_opts, "sex", "Male"))
 
     st.markdown('<p class="section-label">Comorbidities</p>', unsafe_allow_html=True)
     all_comorbidities = ["Diabetes", "Smoking", "Coronary artery disease", "Heart failure",
                          "Peripheral arterial disease", "Chronic kidney disease",
                          "Prior stroke", "Hypertension", "Obesity", "COPD"]
-    comorbidities = st.multiselect("Select all that apply", all_comorbidities,
-                                   default=get_default("comorbidities", []))
+    raw_comorbidities = get_default("comorbidities", [])
+    safe_comorbidities = [c for c in raw_comorbidities if c in all_comorbidities] if isinstance(raw_comorbidities, list) else []
+    comorbidities = st.multiselect("Select all that apply", all_comorbidities, default=safe_comorbidities)
 
     st.markdown('<p class="section-label">Functional & operative status</p>', unsafe_allow_html=True)
-    functional_status = st.selectbox("Functional status",
-        ["Good", "Limited", "Poor"],
-        index=["Good","Limited","Poor"].index(get_default("functional_status","Good")))
-    operative_risk = st.selectbox("Operative risk",
-        ["Low", "Moderate", "High"],
-        index=["Low","Moderate","High"].index(get_default("operative_risk","Low")))
-    ambulatory = st.selectbox("Ambulatory status",
-        ["Fully ambulatory", "Limited ambulation", "Non-ambulatory"],
-        index=["Fully ambulatory","Limited ambulation","Non-ambulatory"].index(
-            get_default("ambulatory","Fully ambulatory")))
+    func_opts = ["Good", "Limited", "Poor", "Unknown"]
+    functional_status = st.selectbox("Functional status", func_opts, index=safe_index(func_opts, "functional_status", "Unknown"))
+    risk_opts = ["Low", "Moderate", "High", "Unknown"]
+    operative_risk = st.selectbox("Operative risk", risk_opts, index=safe_index(risk_opts, "operative_risk", "Unknown"))
+    amb_opts = ["Fully ambulatory", "Limited ambulation", "Non-ambulatory", "Unknown"]
+    ambulatory = st.selectbox("Ambulatory status", amb_opts, index=safe_index(amb_opts, "ambulatory", "Unknown"))
 
     st.markdown('<p class="section-label">Vascular status</p>', unsafe_allow_html=True)
     vasc_status_opts = ["Normal/adequate perfusion","Mild disease","Moderate disease","Severe ischemia","Unknown"]
-    vascular_status = st.selectbox("Vascular perfusion",
-        vasc_status_opts,
-        index=vasc_status_opts.index(get_default("vascular_status","Normal/adequate perfusion")))
-    prior_vasc_opts = ["None","Prior revascularization","Prior bypass","Prior angioplasty/stent"]
-    prior_vasc = st.selectbox("Prior vascular intervention",
-        prior_vasc_opts,
-        index=prior_vasc_opts.index(get_default("prior_vasc","None")))
+    vascular_status = st.selectbox("Vascular perfusion", vasc_status_opts, index=safe_index(vasc_status_opts, "vascular_status", "Unknown"))
+    prior_vasc_opts = ["None","Prior revascularization","Prior bypass","Prior angioplasty/stent","Unknown"]
+    prior_vasc = st.selectbox("Prior vascular intervention", prior_vasc_opts, index=safe_index(prior_vasc_opts, "prior_vasc", "Unknown"))
 
     st.markdown('<p class="section-label">Wound characteristics</p>', unsafe_allow_html=True)
-    wound_location = st.selectbox("Location",
-        ["Forefoot","Midfoot","Heel","Ankle","Lower leg","Other"],
-        index=["Forefoot","Midfoot","Heel","Ankle","Lower leg","Other"].index(
-            get_default("wound_location","Forefoot")))
-    wound_size = st.selectbox("Size",
-        ["Small (<2 cm)","Medium (2–5 cm)","Large (>5 cm)"],
-        index=["Small (<2 cm)","Medium (2–5 cm)","Large (>5 cm)"].index(
-            get_default("wound_size","Small (<2 cm)")))
-    wound_depth = st.selectbox("Depth",
-        ["Superficial","Into subcutaneous tissue","Exposed tendon/bone","Deep/complex"],
-        index=["Superficial","Into subcutaneous tissue","Exposed tendon/bone","Deep/complex"].index(
-            get_default("wound_depth","Superficial")))
-    infection = st.selectbox("Infection status",
-        ["None","Suspected","Confirmed localized","Confirmed deep/osteomyelitis"],
-        index=["None","Suspected","Confirmed localized","Confirmed deep/osteomyelitis"].index(
-            get_default("infection","None")))
-    tissue = st.selectbox("Tissue status",
-        ["Healthy appearing","Necrotic tissue present","Mixed/unclear"],
-        index=["Healthy appearing","Necrotic tissue present","Mixed/unclear"].index(
-            get_default("tissue","Healthy appearing")))
-    chronicity = st.selectbox("Chronicity",
-        ["Acute (<4 wks)","Subacute (4–12 wks)","Chronic (>12 wks)"],
-        index=["Acute (<4 wks)","Subacute (4–12 wks)","Chronic (>12 wks)"].index(
-            get_default("chronicity","Acute (<4 wks)")))
-    pain = st.selectbox("Pain level",
-        ["None","Mild","Moderate","Severe"],
-        index=["None","Mild","Moderate","Severe"].index(get_default("pain","None")))
+    loc_opts = ["Forefoot","Midfoot","Heel","Ankle","Lower leg","Other","Unknown"]
+    wound_location = st.selectbox("Location", loc_opts, index=safe_index(loc_opts, "wound_location", "Unknown"))
+    size_opts = ["Small (<2 cm)","Medium (2–5 cm)","Large (>5 cm)","Unknown"]
+    wound_size = st.selectbox("Size", size_opts, index=safe_index(size_opts, "wound_size", "Unknown"))
+    depth_opts = ["Superficial","Into subcutaneous tissue","Exposed tendon/bone","Deep/complex","Unknown"]
+    wound_depth = st.selectbox("Depth", depth_opts, index=safe_index(depth_opts, "wound_depth", "Unknown"))
+    infect_opts = ["None","Suspected","Confirmed localized","Confirmed deep/osteomyelitis","Unknown"]
+    infection = st.selectbox("Infection status", infect_opts, index=safe_index(infect_opts, "infection", "Unknown"))
+    tissue_opts = ["Healthy appearing","Necrotic tissue present","Mixed/unclear","Unknown"]
+    tissue = st.selectbox("Tissue status", tissue_opts, index=safe_index(tissue_opts, "tissue", "Unknown"))
+    chron_opts = ["Acute (<4 wks)","Subacute (4–12 wks)","Chronic (>12 wks)","Unknown"]
+    chronicity = st.selectbox("Chronicity", chron_opts, index=safe_index(chron_opts, "chronicity", "Unknown"))
+    pain_opts = ["None","Mild","Moderate","Severe","Unknown"]
+    pain = st.selectbox("Pain level", pain_opts, index=safe_index(pain_opts, "pain", "Unknown"))
 
     st.markdown('<p class="section-label">Patient priority</p>', unsafe_allow_html=True)
-    goal_opts = ["Limb salvage","Fastest healing","Avoid major surgery",
-                 "Preserve function","Pain control","Not specified"]
-    patient_goal = st.selectbox("Primary goal",
-        goal_opts,
-        index=goal_opts.index(get_default("patient_goal","Not specified")))
+    goal_opts = ["Limb salvage","Fastest healing","Avoid major surgery","Preserve function","Pain control","Not specified"]
+    patient_goal = st.selectbox("Primary goal", goal_opts, index=safe_index(goal_opts, "patient_goal", "Not specified"))
 
 # ── Auto-parse prompt ─────────────────────────────────────────────────────────
 def build_autofill_prompt(narrative: str) -> str:
@@ -258,27 +245,28 @@ NARRATIVE:
 Return ONLY a valid JSON object with these exact keys and allowed values:
 
 {{
-  "age": <integer or 65 if unknown>,
+  "age": <integer, or 65 if unknown>,
   "sex": "<Male|Female|Other/Not specified>",
   "comorbidities": [<list from: "Diabetes","Smoking","Coronary artery disease","Heart failure","Peripheral arterial disease","Chronic kidney disease","Prior stroke","Hypertension","Obesity","COPD">],
-  "functional_status": "<Good|Limited|Poor>",
-  "operative_risk": "<Low|Moderate|High>",
-  "ambulatory": "<Fully ambulatory|Limited ambulation|Non-ambulatory>",
+  "functional_status": "<Good|Limited|Poor|Unknown>",
+  "operative_risk": "<Low|Moderate|High|Unknown>",
+  "ambulatory": "<Fully ambulatory|Limited ambulation|Non-ambulatory|Unknown>",
   "vascular_status": "<Normal/adequate perfusion|Mild disease|Moderate disease|Severe ischemia|Unknown>",
-  "prior_vasc": "<None|Prior revascularization|Prior bypass|Prior angioplasty/stent>",
-  "wound_location": "<Forefoot|Midfoot|Heel|Ankle|Lower leg|Other>",
-  "wound_size": "<Small (<2 cm)|Medium (2–5 cm)|Large (>5 cm)>",
-  "wound_depth": "<Superficial|Into subcutaneous tissue|Exposed tendon/bone|Deep/complex>",
-  "infection": "<None|Suspected|Confirmed localized|Confirmed deep/osteomyelitis>",
-  "tissue": "<Healthy appearing|Necrotic tissue present|Mixed/unclear>",
-  "chronicity": "<Acute (<4 wks)|Subacute (4–12 wks)|Chronic (>12 wks)>",
-  "pain": "<None|Mild|Moderate|Severe>",
+  "prior_vasc": "<None|Prior revascularization|Prior bypass|Prior angioplasty/stent|Unknown>",
+  "wound_location": "<Forefoot|Midfoot|Heel|Ankle|Lower leg|Other|Unknown>",
+  "wound_size": "<Small (<2 cm)|Medium (2–5 cm)|Large (>5 cm)|Unknown>",
+  "wound_depth": "<Superficial|Into subcutaneous tissue|Exposed tendon/bone|Deep/complex|Unknown>",
+  "infection": "<None|Suspected|Confirmed localized|Confirmed deep/osteomyelitis|Unknown>",
+  "tissue": "<Healthy appearing|Necrotic tissue present|Mixed/unclear|Unknown>",
+  "chronicity": "<Acute (<4 wks)|Subacute (4–12 wks)|Chronic (>12 wks)|Unknown>",
+  "pain": "<None|Mild|Moderate|Severe|Unknown>",
   "patient_goal": "<Limb salvage|Fastest healing|Avoid major surgery|Preserve function|Pain control|Not specified>"
 }}
 
 Rules:
 - Use ONLY the allowed values listed above — no variations
-- If a field is not mentioned, make a reasonable clinical inference or use the most neutral option
+- If a field is clearly stated, extract it accurately
+- If a field is ambiguous or not mentioned, use "Unknown" — do NOT guess
 - Return ONLY the JSON, no explanation or markdown fences
 """
 
@@ -391,6 +379,9 @@ Rules:
 - Do NOT recommend one option with high confidence; acknowledge genuine tradeoffs
 - Be specific to this patient — avoid generic statements that would apply to any wound
 - Decision drivers must be the 3 most influential factors specific to this case
+- For any field marked "Unknown": do not assume or fabricate a value — instead explicitly flag it as a gap and explain how knowing it would change the reasoning
+- If many fields are Unknown, scale back the confidence of all options significantly and use the uncertainty_note to list the most important missing information needed before any management decision
+- If the input appears to be nonsensical, a joke, or clearly not a real clinical case, return options with name "Insufficient Clinical Information" and use the uncertainty_note to explain that a real case narrative is needed
 - Do not use medical jargon without brief clarification
 - Do not fabricate specific imaging findings or lab values not mentioned
 """
