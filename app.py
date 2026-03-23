@@ -166,8 +166,11 @@ with st.sidebar:
     sample_names = ["— select —"] + [c["name"] for c in SAMPLE_CASES]
     chosen_sample = st.selectbox("Sample cases", sample_names, label_visibility="collapsed")
 
-    # Populate defaults from sample
+    # Populate defaults from sample or autofill
     def get_default(field, fallback):
+        # Autofill from narrative takes priority
+        if f"autofill_{field}" in st.session_state:
+            return st.session_state[f"autofill_{field}"]
         if chosen_sample and chosen_sample != "— select —":
             case = next((c for c in SAMPLE_CASES if c["name"] == chosen_sample), None)
             if case:
@@ -245,6 +248,40 @@ with st.sidebar:
         goal_opts,
         index=goal_opts.index(get_default("patient_goal","Not specified")))
 
+# ── Auto-parse prompt ─────────────────────────────────────────────────────────
+def build_autofill_prompt(narrative: str) -> str:
+    return f"""You are a clinical data extraction assistant. Read the following clinical case narrative and extract structured fields.
+
+NARRATIVE:
+{narrative}
+
+Return ONLY a valid JSON object with these exact keys and allowed values:
+
+{{
+  "age": <integer or 65 if unknown>,
+  "sex": "<Male|Female|Other/Not specified>",
+  "comorbidities": [<list from: "Diabetes","Smoking","Coronary artery disease","Heart failure","Peripheral arterial disease","Chronic kidney disease","Prior stroke","Hypertension","Obesity","COPD">],
+  "functional_status": "<Good|Limited|Poor>",
+  "operative_risk": "<Low|Moderate|High>",
+  "ambulatory": "<Fully ambulatory|Limited ambulation|Non-ambulatory>",
+  "vascular_status": "<Normal/adequate perfusion|Mild disease|Moderate disease|Severe ischemia|Unknown>",
+  "prior_vasc": "<None|Prior revascularization|Prior bypass|Prior angioplasty/stent>",
+  "wound_location": "<Forefoot|Midfoot|Heel|Ankle|Lower leg|Other>",
+  "wound_size": "<Small (<2 cm)|Medium (2–5 cm)|Large (>5 cm)>",
+  "wound_depth": "<Superficial|Into subcutaneous tissue|Exposed tendon/bone|Deep/complex>",
+  "infection": "<None|Suspected|Confirmed localized|Confirmed deep/osteomyelitis>",
+  "tissue": "<Healthy appearing|Necrotic tissue present|Mixed/unclear>",
+  "chronicity": "<Acute (<4 wks)|Subacute (4–12 wks)|Chronic (>12 wks)>",
+  "pain": "<None|Mild|Moderate|Severe>",
+  "patient_goal": "<Limb salvage|Fastest healing|Avoid major surgery|Preserve function|Pain control|Not specified>"
+}}
+
+Rules:
+- Use ONLY the allowed values listed above — no variations
+- If a field is not mentioned, make a reasonable clinical inference or use the most neutral option
+- Return ONLY the JSON, no explanation or markdown fences
+"""
+
 # ── Main area — case narrative + submit ───────────────────────────────────────
 col1, col2 = st.columns([3, 1])
 with col1:
@@ -256,6 +293,7 @@ with col1:
         height=160,
         placeholder="e.g. 68-year-old man with poorly controlled T2DM and PAD presenting with a 3-week-old plantar forefoot ulcer with mild surrounding erythema. ABI 0.62 on the right. No systemic signs of infection. Has not had prior vascular workup..."
     )
+    autofill_btn = st.button("✨ Auto-fill fields from narrative", help="Uses AI to parse your narrative and populate the sidebar fields automatically")
 
 with col2:
     st.markdown('<p class="section-label">API key</p>', unsafe_allow_html=True)
@@ -263,6 +301,38 @@ with col2:
                             help="Your key stays in-session only, never stored.")
     st.markdown("")
     analyze_btn = st.button("🔍 Analyze Case", use_container_width=True, type="primary")
+
+# ── Auto-fill logic ───────────────────────────────────────────────────────────
+if autofill_btn:
+    if not api_key:
+        st.error("Please enter your Anthropic API key first.")
+    elif not case_narrative.strip():
+        st.warning("Please enter a case narrative to auto-fill from.")
+    else:
+        with st.spinner("Parsing narrative — auto-filling fields..."):
+            try:
+                client = anthropic.Anthropic(api_key=api_key)
+                response = client.messages.create(
+                    model="claude-haiku-4-5-20251001",
+                    max_tokens=1000,
+                    messages=[{"role": "user", "content": build_autofill_prompt(case_narrative)}]
+                )
+                raw = response.content[0].text.strip()
+                raw = re.sub(r'^```(?:json)?\s*', '', raw)
+                raw = re.sub(r'\s*```$', '', raw)
+                parsed = json.loads(raw)
+
+                # Store parsed fields in session state
+                for key, val in parsed.items():
+                    st.session_state[f"autofill_{key}"] = val
+
+                st.success("✅ Fields auto-filled from narrative! Review the sidebar and click Analyze Case.")
+                st.rerun()
+
+            except json.JSONDecodeError as e:
+                st.error(f"Could not parse auto-fill response. Try again. ({e})")
+            except Exception as e:
+                st.error(f"Auto-fill error: {e}")
 
 st.markdown("---")
 
@@ -398,7 +468,7 @@ if analyze_btn:
                 client = anthropic.Anthropic(api_key=api_key)
                 response = client.messages.create(
                     model="claude-haiku-4-5-20251001",
-                    max_tokens=2000,
+                    max_tokens=4000,
                     messages=[{"role": "user", "content": build_prompt(inputs)}]
                 )
                 raw = response.content[0].text.strip()
