@@ -309,7 +309,7 @@ st.markdown('<p class="section-label" style="margin-top:0">Select module</p>', u
 col1, col2, col3 = st.columns(3)
 for col, (key, mod) in zip([col1, col2, col3], MODULES.items()):
     with col:
-        btn_label = f"{mod['icon']}  {mod['label']}\n{mod['subtitle']}"
+        btn_label = f"{mod['icon']}  {mod['label']}"
         if st.button(btn_label, key=f"mod_{key}", use_container_width=True):
             st.session_state["selected_module"] = key
             st.rerun()
