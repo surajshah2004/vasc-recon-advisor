@@ -15,134 +15,182 @@ st.set_page_config(
 # ── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@300;400;500;600&display=swap');
 
 html, body, [class*="css"] {
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
 }
 
-h1, h2, h3 { font-family: 'DM Serif Display', serif; }
+h1, h2, h3, h4 { font-family: 'Playfair Display', serif; }
 
-.main { background-color: #f7f6f2; }
+/* Main background — warm deep slate */
+.main { background-color: #0f1923; }
+.stApp { background-color: #0f1923; }
 
-.stApp { background-color: #f7f6f2; }
+/* Main content area subtle texture */
+.block-container {
+    background-color: #0f1923;
+    padding-top: 2rem !important;
+}
 
-/* Sidebar */
+/* Sidebar — slightly lighter slate */
 section[data-testid="stSidebar"] {
-    background-color: #1a2332;
-    color: #e8e4dc;
+    background-color: #141f2e;
+    border-right: 1px solid #1e2d42;
 }
-section[data-testid="stSidebar"] * { color: #e8e4dc !important; }
+section[data-testid="stSidebar"] * { color: #c8d8e8 !important; }
 section[data-testid="stSidebar"] .stSelectbox label,
 section[data-testid="stSidebar"] .stTextInput label,
-section[data-testid="stSidebar"] .stMultiSelect label { color: #a8b5c8 !important; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+section[data-testid="stSidebar"] .stMultiSelect label {
+    color: #5a7a9a !important;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+}
 
 /* Header banner */
 .header-banner {
-    background: linear-gradient(135deg, #1a2332 0%, #2d4a6b 100%);
+    background: linear-gradient(135deg, #141f2e 0%, #1a3a5c 60%, #1e4d7a 100%);
     color: white;
     padding: 2rem 2.5rem;
-    border-radius: 12px;
+    border-radius: 14px;
     margin-bottom: 2rem;
     display: flex;
     align-items: center;
     gap: 1.5rem;
+    border: 1px solid #1e3a5a;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
 }
-.header-banner h1 { color: white; margin: 0; font-size: 2rem; }
-.header-banner p { color: #a8c4e0; margin: 0.3rem 0 0; font-size: 0.95rem; font-weight: 300; }
+.header-banner h1 { color: white; margin: 0; font-size: 2rem; letter-spacing: -0.02em; }
+.header-banner p { color: #7ab0d4; margin: 0.3rem 0 0; font-size: 0.9rem; font-weight: 300; }
 
 /* Cards */
 .option-card {
-    background: white;
-    border-radius: 10px;
-    padding: 1.5rem;
+    background: #141f2e;
+    border-radius: 12px;
+    padding: 1.6rem;
     margin-bottom: 1.2rem;
-    border-left: 5px solid #2d6a4f;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    border: 1px solid #1e3a5a;
+    border-left: 4px solid #3a8f6a;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
-.option-card.amber { border-left-color: #d4892a; }
-.option-card.blue  { border-left-color: #2d4a9b; }
-.option-card h3 { margin-top: 0; font-size: 1.15rem; color: #1a2332; }
+.option-card.amber { border-left-color: #d4892a; border-color: #2e2415; }
+.option-card.blue  { border-left-color: #4a7fd4; border-color: #1a2540; }
+.option-card h3 { margin-top: 0; font-size: 1.1rem; color: #e8f0f8; }
+.option-card p { color: #8ab0cc !important; }
 .option-card .tag {
     display: inline-block;
-    background: #e8f5ee;
-    color: #2d6a4f;
+    background: #0d2a1e;
+    color: #3a8f6a;
     border-radius: 4px;
     padding: 2px 10px;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 0.7rem;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.8rem;
+    border: 1px solid #1e4a36;
 }
-.option-card.amber .tag { background: #fdf0dc; color: #d4892a; }
-.option-card.blue  .tag { background: #e8edf8; color: #2d4a9b; }
+.option-card.amber .tag { background: #2a1a08; color: #d4892a; border-color: #4a3010; }
+.option-card.blue  .tag { background: #0d1a2e; color: #4a7fd4; border-color: #1a2e4a; }
 
 .pro-con { display: flex; gap: 1rem; margin-top: 0.8rem; }
 .pros, .cons {
     flex: 1;
-    background: #f9f9f7;
-    border-radius: 6px;
-    padding: 0.75rem 1rem;
-    font-size: 0.88rem;
-    color: #2a2a2a !important;
+    background: #0f1923;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    font-size: 0.87rem;
+    color: #a8c4d8 !important;
+    border: 1px solid #1e2d42;
 }
-.pros strong { color: #2d6a4f; }
-.cons strong { color: #c0392b; }
-.pros ul li, .cons ul li { color: #2a2a2a !important; }
+.pros strong { color: #3a8f6a; }
+.cons strong { color: #d45a5a; }
+.pros ul li, .cons ul li { color: #a8c4d8 !important; }
+.option-card .best-fit { color: #6a8fa8 !important; font-size: 0.85rem; margin-top: 0.9rem; }
+.option-card .best-fit strong { color: #8ab0cc; }
 
 /* Comparative reasoning */
 .comp-reasoning {
-    font-size: 0.95rem;
-    color: #2a2a2a !important;
-    line-height: 1.7;
-    background: white;
-    border-radius: 10px;
-    padding: 1.2rem 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    font-size: 0.93rem;
+    color: #a8c4d8 !important;
+    line-height: 1.8;
+    background: #141f2e;
+    border-radius: 12px;
+    padding: 1.4rem 1.8rem;
+    border: 1px solid #1e3a5a;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
 /* Driver chips */
 .driver-chip {
     display: inline-block;
-    background: #1a2332;
-    color: #a8c4e0 !important;
+    background: #0d1e30;
+    color: #7ab0d4 !important;
     border-radius: 20px;
-    padding: 4px 14px;
+    padding: 5px 16px;
     font-size: 0.82rem;
     margin: 4px;
+    border: 1px solid #1e3a5a;
+    font-weight: 500;
 }
 
 /* Recommendation box */
 .rec-box {
-    background: linear-gradient(135deg, #e8f5ee, #f0f8f0);
-    border: 1.5px solid #2d6a4f;
-    border-radius: 10px;
+    background: #0d2a1e;
+    border: 1px solid #1e4a36;
+    border-left: 4px solid #3a8f6a;
+    border-radius: 12px;
     padding: 1.4rem 1.8rem;
     margin: 1.2rem 0;
 }
-.rec-box h4 { color: #1a5c38; margin-top: 0; }
+.rec-box h4 { color: #3a8f6a; margin-top: 0; font-size: 1rem; }
+.rec-box p { color: #7ab89a !important; }
 
 /* Disclaimer */
 .disclaimer {
-    background: #fff8e7;
-    border: 1px solid #f0c040;
-    border-radius: 8px;
-    padding: 1rem 1.4rem;
+    background: #1e1a0a;
+    border: 1px solid #3a2e08;
+    border-left: 4px solid #d4892a;
+    border-radius: 10px;
+    padding: 1.1rem 1.5rem;
     font-size: 0.82rem;
-    color: #7a5c00;
+    color: #b89a5a;
     margin-top: 1.5rem;
+    line-height: 1.7;
 }
 
-/* Divider */
+/* Section labels */
 .section-label {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #8a9ab0;
+    letter-spacing: 0.12em;
+    color: #3a5a7a;
     margin: 1.8rem 0 0.5rem;
 }
+
+/* Section headers */
+h2 { color: #c8d8e8 !important; font-size: 1.3rem !important; margin-top: 2rem !important; }
+
+/* Text area and inputs in main area */
+.stTextArea textarea {
+    background-color: #141f2e !important;
+    color: #c8d8e8 !important;
+    border: 1px solid #1e3a5a !important;
+    border-radius: 8px !important;
+}
+.stTextArea label { color: #5a7a9a !important; }
+
+/* Ready state placeholder */
+.ready-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    color: #3a5a7a;
+}
+.ready-state h3 { color: #4a7a9a; font-size: 1.6rem; margin-top: 1rem; }
+.ready-state p { color: #3a5a7a; max-width: 480px; margin: 0.5rem auto; line-height: 1.7; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -288,7 +336,6 @@ with col2:
     # Try to load from Streamlit secrets, fall back to manual entry
     try:
         api_key = st.secrets["ANTHROPIC_API_KEY"]
-        st.success("🔑 API key loaded", icon="✅")
     except:
         api_key = st.text_input("Anthropic API key", type="password",
                                 help="Your key stays in-session only, never stored.")
@@ -488,13 +535,11 @@ if analyze_btn:
 else:
     # Placeholder state
     st.markdown("""
-    <div style="text-align:center;padding:4rem 2rem;color:#8a9ab0">
+    <div class="ready-state">
       <div style="font-size:4rem">🫀</div>
-      <h3 style="font-family:'DM Serif Display',serif;color:#2a3a4a;margin-top:1rem">Ready to analyze</h3>
-      <p style="max-width:480px;margin:0.5rem auto;line-height:1.6">
-        Fill in patient details in the sidebar, enter a case narrative above,
-        add your Anthropic API key, and click <strong>Analyze Case</strong>.
-        Or load one of the built-in sample cases to explore the tool.
-      </p>
+      <h3>Ready to analyze</h3>
+      <p>Fill in patient details in the sidebar, enter a case narrative above,
+        and click <strong style="color:#7ab0d4">Analyze Case</strong>.
+        Or load one of the built-in sample cases to explore the tool.</p>
     </div>
     """, unsafe_allow_html=True)
