@@ -2,38 +2,26 @@ import streamlit as st
 import anthropic
 import json
 import re
-from sample_cases import SAMPLE_CASES
 
-# ── Page config ──────────────────────────────────────────────────────────────
+# ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="VascRecon Advisor",
-    page_icon="🩺",
+    page_title="CardioAdvisor",
+    page_icon="🫀",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ── Custom CSS ────────────────────────────────────────────────────────────────
+# ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@300;400;500;600&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-}
-
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 h1, h2, h3, h4 { font-family: 'Playfair Display', serif; }
 
-/* Main background — warm deep slate */
-.main { background-color: #0f1923; }
-.stApp { background-color: #0f1923; }
+.main, .stApp { background-color: #0f1923; }
+.block-container { background-color: #0f1923; padding-top: 2rem !important; }
 
-/* Main content area subtle texture */
-.block-container {
-    background-color: #0f1923;
-    padding-top: 2rem !important;
-}
-
-/* Sidebar — slightly lighter slate */
 section[data-testid="stSidebar"] {
     background-color: #141f2e;
     border-right: 1px solid #1e2d42;
@@ -49,13 +37,12 @@ section[data-testid="stSidebar"] .stMultiSelect label {
     font-weight: 600;
 }
 
-/* Header banner */
 .header-banner {
     background: linear-gradient(135deg, #141f2e 0%, #1a3a5c 60%, #1e4d7a 100%);
     color: white;
     padding: 2rem 2.5rem;
     border-radius: 14px;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
     gap: 1.5rem;
@@ -65,7 +52,6 @@ section[data-testid="stSidebar"] .stMultiSelect label {
 .header-banner h1 { color: white; margin: 0; font-size: 2rem; letter-spacing: -0.02em; }
 .header-banner p { color: #7ab0d4; margin: 0.3rem 0 0; font-size: 0.9rem; font-weight: 300; }
 
-/* Cards */
 .option-card {
     background: #141f2e;
     border-radius: 12px;
@@ -108,10 +94,7 @@ section[data-testid="stSidebar"] .stMultiSelect label {
 .pros strong { color: #3a8f6a; }
 .cons strong { color: #d45a5a; }
 .pros ul li, .cons ul li { color: #a8c4d8 !important; }
-.option-card .best-fit { color: #6a8fa8 !important; font-size: 0.85rem; margin-top: 0.9rem; }
-.option-card .best-fit strong { color: #8ab0cc; }
 
-/* Comparative reasoning */
 .comp-reasoning {
     font-size: 0.93rem;
     color: #a8c4d8 !important;
@@ -123,7 +106,6 @@ section[data-testid="stSidebar"] .stMultiSelect label {
     box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
-/* Driver chips */
 .driver-chip {
     display: inline-block;
     background: #0d1e30;
@@ -136,7 +118,6 @@ section[data-testid="stSidebar"] .stMultiSelect label {
     font-weight: 500;
 }
 
-/* Recommendation box */
 .rec-box {
     background: #0d2a1e;
     border: 1px solid #1e4a36;
@@ -148,7 +129,6 @@ section[data-testid="stSidebar"] .stMultiSelect label {
 .rec-box h4 { color: #3a8f6a; margin-top: 0; font-size: 1rem; }
 .rec-box p { color: #7ab89a !important; }
 
-/* Disclaimer */
 .disclaimer {
     background: #1e1a0a;
     border: 1px solid #3a2e08;
@@ -161,7 +141,6 @@ section[data-testid="stSidebar"] .stMultiSelect label {
     line-height: 1.7;
 }
 
-/* Section labels */
 .section-label {
     font-size: 0.7rem;
     font-weight: 600;
@@ -171,10 +150,8 @@ section[data-testid="stSidebar"] .stMultiSelect label {
     margin: 1.8rem 0 0.5rem;
 }
 
-/* Section headers */
 h2 { color: #c8d8e8 !important; font-size: 1.3rem !important; margin-top: 2rem !important; }
 
-/* Text area and inputs in main area */
 .stTextArea textarea {
     background-color: #141f2e !important;
     color: #c8d8e8 !important;
@@ -183,109 +160,188 @@ h2 { color: #c8d8e8 !important; font-size: 1.3rem !important; margin-top: 2rem !
 }
 .stTextArea label { color: #5a7a9a !important; }
 
-/* Ready state placeholder */
-.ready-state {
-    text-align: center;
-    padding: 5rem 2rem;
-    color: #3a5a7a;
+.ready-state { text-align: center; padding: 5rem 2rem; }
+.ready-state h3 { color: #4a7a9a; font-size: 1.6rem; margin-top: 1rem; font-family: 'Playfair Display', serif; }
+.ready-state p { color: #3a5a7a; max-width: 500px; margin: 0.5rem auto; line-height: 1.7; }
+
+.module-hint {
+    background: #141f2e;
+    border: 1px solid #1e3a5a;
+    border-radius: 10px;
+    padding: 1rem 1.4rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: #5a8aaa;
+    line-height: 1.6;
 }
-.ready-state h3 { color: #4a7a9a; font-size: 1.6rem; margin-top: 1rem; }
-.ready-state p { color: #3a5a7a; max-width: 480px; margin: 0.5rem auto; line-height: 1.7; }
+.module-hint strong { color: #7ab0d4; }
 </style>
 """, unsafe_allow_html=True)
+
+# ── Module definitions ────────────────────────────────────────────────────────
+MODULES = {
+    "afib": {
+        "label": "Atrial Fibrillation",
+        "icon": "⚡",
+        "subtitle": "Rate vs rhythm · Anticoagulation · Ablation",
+        "hint": "Include if available: <strong>AFib type</strong> (paroxysmal/persistent/permanent), <strong>symptom burden</strong>, <strong>CHA₂DS₂-VASc score</strong>, <strong>HAS-BLED score</strong>, <strong>prior cardioversions or ablations</strong>, <strong>echo findings</strong> (LA size, EF), <strong>current medications</strong>.",
+        "prompt_context": """You are supporting clinical reasoning for atrial fibrillation (AFib) management. Focus on the key decision axes: rate control vs rhythm control, anticoagulation strategy (stroke vs bleeding risk tradeoff), and procedural options.
+
+CRITICAL — model the real clinical workflow accurately:
+
+1. ANTICOAGULATION IS A SHARED DECISION. Never frame it as something to initiate "despite patient preference" or override patient refusal. If the patient declines anticoagulation, explicitly name this as the central decision bottleneck. The appropriate response is structured counseling, risk communication, and exploration of alternatives (e.g. LAAO) — not bypassing patient autonomy. Use language like "strongly recommended pending patient agreement" or "requires shared decision-making given patient's current reluctance."
+
+2. RHYTHM CONTROL FOLLOWS A LAYERED ESCALATION — always present this progression accurately:
+   - Step 1: Cardioversion (electrical or pharmacologic) — this is typically the FIRST active rhythm-control intervention. It is distinct from ablation and must appear as its own pathway or step, not collapsed into ablation.
+   - Step 2: Antiarrhythmic drug therapy (e.g. flecainide, sotalol, amiodarone) — often trialed alongside or after cardioversion.
+   - Step 3: Catheter ablation — appropriate when antiarrhythmics fail, are not tolerated, or when the patient has strong symptom/lifestyle goals and elects an invasive approach after informed discussion.
+
+3. ABLATION POSITIONING. Ablation is a reasonable and guideline-supported option in appropriate candidates — but it is not automatically superior or "best fit." Frame it conditionally: suitable for patients who prefer a potentially more durable rhythm-control strategy, have failed or declined antiarrhythmics, have paroxysmal or early persistent AFib, and are willing to accept procedural risk after informed consent. Do not present it as the obvious choice.
+
+4. RATE AND RHYTHM CONTROL ARE NOT MUTUALLY EXCLUSIVE. Rate control often continues in parallel while cardioversion or rhythm strategy is being planned, trialed, or awaited. Make this explicit.
+
+5. Consider throughout: AFib type (paroxysmal/persistent/longstanding persistent/permanent), symptom burden and its impact on quality of life, CHA₂DS₂-VASc score, HAS-BLED score, LV function (EF), LA size, patient lifestyle goals, prior cardioversions or ablations, current medications, and any explicit patient preferences or refusals."""
+    },
+    "valvular": {
+        "label": "Valvular Heart Disease",
+        "icon": "🔬",
+        "subtitle": "Watchful waiting vs intervention timing",
+        "hint": "Include if available: <strong>valve affected</strong> (aortic/mitral/tricuspid), <strong>lesion type</strong> (stenosis/regurgitation), <strong>severity</strong>, <strong>echo findings</strong> (gradients, valve area, EF, chamber dimensions), <strong>symptom status</strong>, <strong>exercise tolerance</strong>, <strong>prior cardiac surgery</strong>.",
+        "prompt_context": """You are supporting clinical reasoning for valvular heart disease management. Focus on the key decision axes: watchful waiting with surveillance vs timing of intervention, and type of intervention if warranted (surgical repair vs replacement vs transcatheter options like TAVR or MitraClip). Consider valve type and lesion severity, LV function and dimensions, symptom status, patient age and surgical risk, and guideline thresholds for intervention."""
+    },
+    "preop": {
+        "label": "Pre-op Cardiac Risk",
+        "icon": "⚕️",
+        "subtitle": "Cardiac clearance before non-cardiac surgery",
+        "hint": "Include if available: <strong>planned surgery type and urgency</strong>, <strong>functional capacity in METs</strong>, <strong>RCRI score</strong>, <strong>prior stress test or echo</strong>, <strong>active cardiac conditions</strong> (unstable angina, decompensated HF, significant arrhythmia, severe valve disease), <strong>current cardiac medications</strong>.",
+        "prompt_context": """You are supporting clinical reasoning for pre-operative cardiac risk stratification before non-cardiac surgery. Focus on the key decision axes: proceed to surgery vs further cardiac workup first, and what workup is appropriate (stress testing, echocardiography, cardiology consultation, coronary angiography). Apply the ACC/AHA stepwise approach: surgery urgency, active cardiac conditions, surgical risk, functional capacity, and whether further testing would change management."""
+    }
+}
+
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("## 🫀 Patient Inputs")
+    st.markdown('<p class="section-label">Demographics</p>', unsafe_allow_html=True)
+
+    age = st.number_input("Age", 18, 100, value=st.session_state.get("af_age", 65))
+
+    sex_opts = ["Male", "Female", "Other/Not specified"]
+    sex = st.selectbox("Sex", sex_opts,
+                       index=sex_opts.index(st.session_state.get("af_sex", "Male")))
+
+    st.markdown('<p class="section-label">Comorbidities</p>', unsafe_allow_html=True)
+    all_comorbidities = [
+        "Diabetes", "Hypertension", "Heart failure", "Coronary artery disease",
+        "Prior stroke/TIA", "Chronic kidney disease", "COPD", "Obesity",
+        "Peripheral arterial disease", "Smoking", "Hyperlipidemia", "Sleep apnea"
+    ]
+    raw_comorbidities = st.session_state.get("af_comorbidities", [])
+    safe_comorbidities = [c for c in raw_comorbidities if c in all_comorbidities] if isinstance(raw_comorbidities, list) else []
+    comorbidities = st.multiselect("Select all that apply", all_comorbidities, default=safe_comorbidities)
+
+    st.markdown('<p class="section-label">Clinical status</p>', unsafe_allow_html=True)
+
+    func_opts = ["Good", "Limited", "Poor", "Unknown"]
+    functional_status = st.selectbox("Functional status", func_opts,
+        index=func_opts.index(st.session_state.get("af_functional_status", "Unknown")))
+
+    risk_opts = ["Low", "Moderate", "High", "Unknown"]
+    operative_risk = st.selectbox("Procedural/operative risk", risk_opts,
+        index=risk_opts.index(st.session_state.get("af_operative_risk", "Unknown")))
+
+    setting_opts = ["Outpatient", "Inpatient", "Pre-operative", "Emergency", "Unknown"]
+    clinical_setting = st.selectbox("Clinical setting", setting_opts,
+        index=setting_opts.index(st.session_state.get("af_clinical_setting", "Unknown")))
+
+    st.markdown('<p class="section-label">Patient priority</p>', unsafe_allow_html=True)
+    goal_opts = ["Symptom control", "Avoid procedures", "Quality of life",
+                 "Longevity/survival", "Minimize medications", "Not specified"]
+    patient_goal = st.selectbox("Primary goal", goal_opts,
+        index=goal_opts.index(st.session_state.get("af_patient_goal", "Not specified")))
 
 # ── Header ────────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="header-banner">
-  <div style="font-size:3rem">🩺</div>
+  <div style="font-size:3rem">🫀</div>
   <div>
-    <h1>VascRecon Advisor</h1>
-    <p>Decision-support for lower extremity wounds at the intersection of vascular and reconstructive surgery &nbsp;·&nbsp; <em>Prototype — not for clinical use</em></p>
+    <h1>CardioAdvisor</h1>
+    <p>Clinical decision-support for cardiology management &nbsp;·&nbsp; <em>Prototype — not for clinical use</em></p>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ── Sidebar — structured inputs ───────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("## 📋 Patient Inputs")
+# ── Narrative box — shown first so auto-detect can read it ───────────────────
+if "selected_module" not in st.session_state:
+    st.session_state["selected_module"] = None
 
-    # Sample case loader
-    st.markdown('<p class="section-label">Load a sample case</p>', unsafe_allow_html=True)
-    sample_names = ["— select —"] + [c["name"] for c in SAMPLE_CASES]
-    chosen_sample = st.selectbox("Sample cases", sample_names, label_visibility="collapsed")
+# Use a shared narrative box before module is selected
+pre_module_narrative = st.session_state.get("pre_module_narrative", "")
 
-    # Populate defaults from sample or autofill — safe version
-    def get_default(field, fallback, options=None):
-        val = None
-        if f"autofill_{field}" in st.session_state:
-            val = st.session_state[f"autofill_{field}"]
-        elif chosen_sample and chosen_sample != "— select —":
-            case = next((c for c in SAMPLE_CASES if c["name"] == chosen_sample), None)
-            if case:
-                val = case.get(field, fallback)
-        if val is None:
-            return fallback
-        # If options provided, verify value is valid — fall back if not
-        if options is not None and val not in options:
-            return fallback
-        return val
+st.markdown('<p class="section-label">Case narrative</p>', unsafe_allow_html=True)
 
-    def safe_index(options, field, fallback):
-        val = get_default(field, fallback, options)
-        return options.index(val) if val in options else options.index(fallback)
+col_narr, col_btns = st.columns([3, 1])
 
-    st.markdown("---")
-    st.markdown('<p class="section-label">Demographics</p>', unsafe_allow_html=True)
-    age_default = get_default("age", 65)
-    age = st.number_input("Age", 18, 100, value=int(age_default) if str(age_default).isdigit() or isinstance(age_default, int) else 65)
-    sex_opts = ["Male", "Female", "Other/Not specified"]
-    sex = st.selectbox("Sex", sex_opts, index=safe_index(sex_opts, "sex", "Male"))
+with col_narr:
+    case_narrative_input = st.text_area(
+        "Paste your clinical case here, then select a module below",
+        value=pre_module_narrative,
+        height=160,
+        key="pre_narrative_input",
+        placeholder="e.g. 67-year-old with persistent AFib, hypertension, palpitations, on metoprolol but not anticoagulated..."
+    )
+    st.session_state["pre_module_narrative"] = case_narrative_input
 
-    st.markdown('<p class="section-label">Comorbidities</p>', unsafe_allow_html=True)
-    all_comorbidities = ["Diabetes", "Smoking", "Coronary artery disease", "Heart failure",
-                         "Peripheral arterial disease", "Chronic kidney disease",
-                         "Prior stroke", "Hypertension", "Obesity", "COPD"]
-    raw_comorbidities = get_default("comorbidities", [])
-    safe_comorbidities = [c for c in raw_comorbidities if c in all_comorbidities] if isinstance(raw_comorbidities, list) else []
-    comorbidities = st.multiselect("Select all that apply", all_comorbidities, default=safe_comorbidities)
+with col_btns:
+    st.markdown('<p class="section-label">Actions</p>', unsafe_allow_html=True)
+    try:
+        api_key = st.secrets["ANTHROPIC_API_KEY"]
+    except:
+        api_key = st.text_input("Anthropic API key", type="password")
+    st.markdown("")
+    autofill_btn = st.button("✨ Auto-fill sidebar", use_container_width=True,
+                              help="AI parses narrative and populates sidebar fields")
+    analyze_btn = st.button("🔍 Analyze Case", use_container_width=True, type="primary")
 
-    st.markdown('<p class="section-label">Functional & operative status</p>', unsafe_allow_html=True)
-    func_opts = ["Good", "Limited", "Poor", "Unknown"]
-    functional_status = st.selectbox("Functional status", func_opts, index=safe_index(func_opts, "functional_status", "Unknown"))
-    risk_opts = ["Low", "Moderate", "High", "Unknown"]
-    operative_risk = st.selectbox("Operative risk", risk_opts, index=safe_index(risk_opts, "operative_risk", "Unknown"))
-    amb_opts = ["Fully ambulatory", "Limited ambulation", "Non-ambulatory", "Unknown"]
-    ambulatory = st.selectbox("Ambulatory status", amb_opts, index=safe_index(amb_opts, "ambulatory", "Unknown"))
+st.markdown("---")
 
-    st.markdown('<p class="section-label">Vascular status</p>', unsafe_allow_html=True)
-    vasc_status_opts = ["Normal/adequate perfusion","Mild disease","Moderate disease","Severe ischemia","Unknown"]
-    vascular_status = st.selectbox("Vascular perfusion", vasc_status_opts, index=safe_index(vasc_status_opts, "vascular_status", "Unknown"))
-    prior_vasc_opts = ["None","Prior revascularization","Prior bypass","Prior angioplasty/stent","Unknown"]
-    prior_vasc = st.selectbox("Prior vascular intervention", prior_vasc_opts, index=safe_index(prior_vasc_opts, "prior_vasc", "Unknown"))
+# ── Module selector ───────────────────────────────────────────────────────────
+st.markdown('<p class="section-label" style="margin-top:0">Select module</p>', unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
+for col, (key, mod) in zip([col1, col2, col3], MODULES.items()):
+    with col:
+        btn_label = f"{mod['icon']}  {mod['label']}\n{mod['subtitle']}"
+        if st.button(btn_label, key=f"mod_{key}", use_container_width=True):
+            st.session_state["selected_module"] = key
+            st.rerun()
 
-    st.markdown('<p class="section-label">Wound characteristics</p>', unsafe_allow_html=True)
-    loc_opts = ["Forefoot","Midfoot","Heel","Ankle","Lower leg","Other","Unknown"]
-    wound_location = st.selectbox("Location", loc_opts, index=safe_index(loc_opts, "wound_location", "Unknown"))
-    size_opts = ["Small (<2 cm)","Medium (2–5 cm)","Large (>5 cm)","Unknown"]
-    wound_size = st.selectbox("Size", size_opts, index=safe_index(size_opts, "wound_size", "Unknown"))
-    depth_opts = ["Superficial","Into subcutaneous tissue","Exposed tendon/bone","Deep/complex","Unknown"]
-    wound_depth = st.selectbox("Depth", depth_opts, index=safe_index(depth_opts, "wound_depth", "Unknown"))
-    infect_opts = ["None","Suspected","Confirmed localized","Confirmed deep/osteomyelitis","Unknown"]
-    infection = st.selectbox("Infection status", infect_opts, index=safe_index(infect_opts, "infection", "Unknown"))
-    tissue_opts = ["Healthy appearing","Necrotic tissue present","Mixed/unclear","Unknown"]
-    tissue = st.selectbox("Tissue status", tissue_opts, index=safe_index(tissue_opts, "tissue", "Unknown"))
-    chron_opts = ["Acute (<4 wks)","Subacute (4–12 wks)","Chronic (>12 wks)","Unknown"]
-    chronicity = st.selectbox("Chronicity", chron_opts, index=safe_index(chron_opts, "chronicity", "Unknown"))
-    pain_opts = ["None","Mild","Moderate","Severe","Unknown"]
-    pain = st.selectbox("Pain level", pain_opts, index=safe_index(pain_opts, "pain", "Unknown"))
+st.markdown("---")
 
-    st.markdown('<p class="section-label">Patient priority</p>', unsafe_allow_html=True)
-    goal_opts = ["Limb salvage","Fastest healing","Avoid major surgery","Preserve function","Pain control","Not specified"]
-    patient_goal = st.selectbox("Primary goal", goal_opts, index=safe_index(goal_opts, "patient_goal", "Not specified"))
+module_key = st.session_state.get("selected_module")
 
-# ── Auto-parse prompt ─────────────────────────────────────────────────────────
+if not module_key:
+    st.markdown("""
+    <div class="ready-state">
+      <div style="font-size:4rem">🫀</div>
+      <h3>Ready to analyze</h3>
+      <p>Paste a case narrative above and select a module to begin.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.stop()
+
+module = MODULES[module_key]
+
+# Sync narrative to module-specific key
+narrative_key = f"narrative_{module_key}"
+if st.session_state.get("pre_module_narrative"):
+    st.session_state[narrative_key] = st.session_state["pre_module_narrative"]
+case_narrative = st.session_state.get(narrative_key, case_narrative_input)
+
+st.markdown(f"<div class='module-hint'>💡 <strong>{module['label']} — suggested narrative details:</strong> {module['hint']}</div>",
+            unsafe_allow_html=True)
+
+# ── Autofill prompt ───────────────────────────────────────────────────────────
 def build_autofill_prompt(narrative: str) -> str:
-    return f"""You are a clinical data extraction assistant. Read the following clinical case narrative and extract structured fields.
+    return f"""You are a clinical data extraction assistant. Read the following cardiology case narrative and extract structured fields.
 
 NARRATIVE:
 {narrative}
@@ -293,63 +349,131 @@ NARRATIVE:
 Return ONLY a valid JSON object with these exact keys and allowed values:
 
 {{
-  "age": <integer, or 65 if unknown>,
-  "sex": "<Male|Female|Other/Not specified>",
-  "comorbidities": [<list from: "Diabetes","Smoking","Coronary artery disease","Heart failure","Peripheral arterial disease","Chronic kidney disease","Prior stroke","Hypertension","Obesity","COPD">],
-  "functional_status": "<Good|Limited|Poor|Unknown>",
-  "operative_risk": "<Low|Moderate|High|Unknown>",
-  "ambulatory": "<Fully ambulatory|Limited ambulation|Non-ambulatory|Unknown>",
-  "vascular_status": "<Normal/adequate perfusion|Mild disease|Moderate disease|Severe ischemia|Unknown>",
-  "prior_vasc": "<None|Prior revascularization|Prior bypass|Prior angioplasty/stent|Unknown>",
-  "wound_location": "<Forefoot|Midfoot|Heel|Ankle|Lower leg|Other|Unknown>",
-  "wound_size": "<Small (<2 cm)|Medium (2–5 cm)|Large (>5 cm)|Unknown>",
-  "wound_depth": "<Superficial|Into subcutaneous tissue|Exposed tendon/bone|Deep/complex|Unknown>",
-  "infection": "<None|Suspected|Confirmed localized|Confirmed deep/osteomyelitis|Unknown>",
-  "tissue": "<Healthy appearing|Necrotic tissue present|Mixed/unclear|Unknown>",
-  "chronicity": "<Acute (<4 wks)|Subacute (4–12 wks)|Chronic (>12 wks)|Unknown>",
-  "pain": "<None|Mild|Moderate|Severe|Unknown>",
-  "patient_goal": "<Limb salvage|Fastest healing|Avoid major surgery|Preserve function|Pain control|Not specified>"
+  "af_age": <integer, or 65 if unknown>,
+  "af_sex": "<Male|Female|Other/Not specified>",
+  "af_comorbidities": [<list from: "Diabetes","Hypertension","Heart failure","Coronary artery disease","Prior stroke/TIA","Chronic kidney disease","COPD","Obesity","Peripheral arterial disease","Smoking","Hyperlipidemia","Sleep apnea">],
+  "af_functional_status": "<Good|Limited|Poor|Unknown>",
+  "af_operative_risk": "<Low|Moderate|High|Unknown>",
+  "af_clinical_setting": "<Outpatient|Inpatient|Pre-operative|Emergency|Unknown>",
+  "af_patient_goal": "<Symptom control|Avoid procedures|Quality of life|Longevity/survival|Minimize medications|Not specified>"
 }}
 
 Rules:
-- Use ONLY the allowed values listed above — no variations
-- If a field is clearly stated, extract it accurately
-- If a field is ambiguous or not mentioned, use "Unknown" — do NOT guess
+- Use ONLY the allowed values — no variations
+- If clearly stated in narrative, extract accurately
+- If ambiguous or not mentioned, use "Unknown" — do NOT guess
 - Return ONLY the JSON, no explanation or markdown fences
 """
 
-# ── Main area — case narrative + submit ───────────────────────────────────────
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.markdown('<p class="section-label">Case narrative</p>', unsafe_allow_html=True)
-    default_narrative = get_default("narrative", "")
-    case_narrative = st.text_area(
-        "Provide a brief free-text summary of the case (chief complaint, relevant history, exam findings, imaging, labs)",
-        value=default_narrative,
-        height=160,
-        placeholder="e.g. 68-year-old man with poorly controlled T2DM and PAD presenting with a 3-week-old plantar forefoot ulcer with mild surrounding erythema. ABI 0.62 on the right. No systemic signs of infection. Has not had prior vascular workup..."
-    )
-    autofill_btn = st.button("✨ Auto-fill fields from narrative", help="Uses AI to parse your narrative and populate the sidebar fields automatically")
+# ── Analysis prompt ───────────────────────────────────────────────────────────
+def build_prompt(inputs: dict, module: dict) -> str:
+    return f"""{module['prompt_context']}
 
-with col2:
-    st.markdown('<p class="section-label">API key</p>', unsafe_allow_html=True)
-    # Try to load from Streamlit secrets, fall back to manual entry
-    try:
-        api_key = st.secrets["ANTHROPIC_API_KEY"]
-    except:
-        api_key = st.text_input("Anthropic API key", type="password",
-                                help="Your key stays in-session only, never stored.")
-    st.markdown("")
-    analyze_btn = st.button("🔍 Analyze Case", use_container_width=True, type="primary")
+You do NOT make clinical decisions. You organize competing management strategies to support discussion and education.
 
-# ── Auto-fill logic ───────────────────────────────────────────────────────────
+PATIENT SUMMARY:
+{inputs['narrative'] or '(No narrative provided)'}
+
+STRUCTURED DATA:
+- Age/Sex: {inputs['age']} y/o {inputs['sex']}
+- Comorbidities: {', '.join(inputs['comorbidities']) if inputs['comorbidities'] else 'None listed'}
+- Functional status: {inputs['functional_status']}
+- Procedural/operative risk: {inputs['operative_risk']}
+- Clinical setting: {inputs['clinical_setting']}
+- Patient primary goal: {inputs['patient_goal']}
+
+TASK:
+Generate a structured clinical reasoning summary in valid JSON. Return ONLY the JSON object, no preamble or markdown fences.
+
+Schema:
+{{
+  "options": [
+    {{
+      "name": "string — short strategy name",
+      "description": "string — 2-3 sentences describing this approach",
+      "pros": ["string", "string", "string"],
+      "cons": ["string", "string", "string"],
+      "best_fit_when": "string — 1-2 sentences on ideal patient profile"
+    }}
+  ],
+  "comparative_reasoning": "string — 3-5 sentences comparing options for THIS patient",
+  "decision_drivers": ["string", "string", "string"],
+  "suggested_direction": "string — 2-3 sentences of soft non-definitive guidance",
+  "uncertainty_note": "string — key uncertainties or missing info that would change this analysis"
+}}
+
+Rules:
+- Generate 2 to 3 meaningfully distinct management options
+- Before listing options, identify if there is a true decision bottleneck — a barrier (patient preference, missing workup, active contraindication) that must be addressed before other decisions can proceed. If one exists, name it explicitly in the comparative_reasoning, and frame all options relative to how they engage with or resolve that bottleneck
+- PATIENT PREFERENCE BARRIERS (anticoagulation refusal, surgery avoidance, medication burden) must be treated as hard constraints that shape options — never as obstacles to route around. If a patient refuses a therapy, options must either work within that refusal or present a structured path to revisit it through shared decision-making
+- Use conditional language throughout — "may," "could," "in appropriate candidates," "pending patient agreement" — never present any single option as clearly correct
+- Where options can run in parallel or in sequence (e.g. rate control while awaiting cardioversion; cardioversion before considering ablation), say so explicitly rather than presenting them as mutually exclusive alternatives
+- For AFib cases specifically: always reflect the cardioversion → antiarrhythmic → ablation escalation ladder where rhythm control is relevant. Do not compress these into a single "ablation" option
+- Ablation should be framed as one reasonable point on the rhythm-control spectrum, not as a default or superior strategy. Anchor it to patient selection criteria (symptom burden, AFib type, antiarrhythmic failure/intolerance, patient preference after informed consent)
+- Avoid stating specific numerical risk estimates (e.g. "2.2% stroke risk") — use qualitative terms like "elevated," "modest," "substantially increased" instead
+- Keep all sections concise — pros/cons max 3 bullets each, option descriptions 2-3 sentences max
+- Decision drivers = the 3 most influential factors in THIS case, including patient preferences or refusals when present
+- For fields marked "Unknown": flag in one sentence and explain how it would change reasoning
+- If many unknowns, scale back confidence and name the top 2 most needed pieces of information
+- If input is nonsensical or not a real clinical case, set all option names to "Insufficient Clinical Information"
+- Do not fabricate labs, scores, or imaging not mentioned
+- Briefly clarify medical jargon used
+"""
+
+# ── Output renderer ───────────────────────────────────────────────────────────
+CARD_COLORS = ["", "amber", "blue"]
+
+def render_output(data: dict):
+    options = data.get("options", [])
+    st.markdown("<h2>Management Options</h2>", unsafe_allow_html=True)
+    for i, opt in enumerate(options):
+        color = CARD_COLORS[i] if i < len(CARD_COLORS) else ""
+        pros_html = "".join(f"<li>{p}</li>" for p in opt.get("pros", []))
+        cons_html = "".join(f"<li>{c}</li>" for c in opt.get("cons", []))
+        st.markdown(f"""
+        <div class="option-card {color}">
+          <div class="tag">Option {i+1}</div>
+          <h3>{opt.get('name','')}</h3>
+          <p style="font-size:0.92rem;margin-bottom:0.8rem">{opt.get('description','')}</p>
+          <div class="pro-con">
+            <div class="pros"><strong>✓ Pros</strong><ul style="margin:0.4rem 0 0;padding-left:1.2rem">{pros_html}</ul></div>
+            <div class="cons"><strong>✗ Cons</strong><ul style="margin:0.4rem 0 0;padding-left:1.2rem">{cons_html}</ul></div>
+          </div>
+          <p style="margin-top:0.9rem;font-size:0.85rem;color:#6a8fa8"><strong style="color:#8ab0cc">Best fit when:</strong> {opt.get('best_fit_when','')}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<h2>Comparative Reasoning</h2>", unsafe_allow_html=True)
+    st.markdown(f"<div class='comp-reasoning'>{data.get('comparative_reasoning','')}</div>",
+                unsafe_allow_html=True)
+
+    st.markdown("<h2>Key Decision Drivers</h2>", unsafe_allow_html=True)
+    drivers_html = "".join(f'<span class="driver-chip">{d}</span>' for d in data.get("decision_drivers", []))
+    st.markdown(f"<div style='margin:0.5rem 0 1.2rem'>{drivers_html}</div>", unsafe_allow_html=True)
+
+    st.markdown("<h2>Suggested Direction</h2>", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="rec-box">
+      <h4>⚖️ Soft Directional Guidance</h4>
+      <p style="margin:0;font-size:0.93rem;line-height:1.7">{data.get('suggested_direction','')}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="disclaimer">
+      <strong>⚠️ Uncertainty note:</strong> {data.get('uncertainty_note','')}<br><br>
+      <strong>Disclaimer:</strong> This tool is a prototype for educational and decision-support purposes only. It does not constitute clinical advice, diagnosis, or treatment recommendations. All management decisions must be made by qualified clinicians based on complete patient evaluation. Do not use this output to guide real patient care.
+    </div>
+    """, unsafe_allow_html=True)
+
+# ── Autofill logic ────────────────────────────────────────────────────────────
 if autofill_btn:
     if not api_key:
-        st.error("Please enter your Anthropic API key first.")
+        st.error("Please enter your Anthropic API key.")
     elif not case_narrative.strip():
-        st.warning("Please enter a case narrative to auto-fill from.")
+        st.warning("Please enter a case narrative first.")
     else:
-        with st.spinner("Parsing narrative — auto-filling fields..."):
+        with st.spinner("Parsing narrative — auto-filling sidebar..."):
             try:
                 client = anthropic.Anthropic(api_key=api_key)
                 response = client.messages.create(
@@ -361,131 +485,21 @@ if autofill_btn:
                 raw = re.sub(r'^```(?:json)?\s*', '', raw)
                 raw = re.sub(r'\s*```$', '', raw)
                 parsed = json.loads(raw)
-
-                # Store parsed fields in session state
                 for key, val in parsed.items():
-                    st.session_state[f"autofill_{key}"] = val
-
-                st.success("✅ Fields auto-filled from narrative! Review the sidebar and click Analyze Case.")
+                    st.session_state[key] = val
+                st.success("✅ Sidebar auto-filled! Review fields then click Analyze Case.")
                 st.rerun()
-
             except json.JSONDecodeError as e:
                 st.error(f"Could not parse auto-fill response. Try again. ({e})")
             except Exception as e:
                 st.error(f"Auto-fill error: {e}")
 
-st.markdown("---")
-
-# ── Prompt builder ────────────────────────────────────────────────────────────
-def build_prompt(inputs: dict) -> str:
-    return f"""You are a clinical reasoning assistant supporting multidisciplinary teams managing complex lower extremity wounds where vascular disease intersects with reconstructive needs. You do NOT make clinical decisions. You organize and explain competing management strategies to support discussion.
-
-PATIENT SUMMARY:
-{inputs['narrative'] or '(No narrative provided)'}
-
-STRUCTURED DATA:
-- Age/Sex: {inputs['age']} y/o {inputs['sex']}
-- Comorbidities: {', '.join(inputs['comorbidities']) if inputs['comorbidities'] else 'None listed'}
-- Functional status: {inputs['functional_status']}
-- Ambulatory status: {inputs['ambulatory']}
-- Operative risk: {inputs['operative_risk']}
-- Vascular status: {inputs['vascular_status']}
-- Prior vascular intervention: {inputs['prior_vasc']}
-- Wound location: {inputs['wound_location']}
-- Wound size: {inputs['wound_size']}
-- Wound depth: {inputs['wound_depth']}
-- Infection: {inputs['infection']}
-- Tissue status: {inputs['tissue']}
-- Chronicity: {inputs['chronicity']}
-- Pain: {inputs['pain']}
-- Patient's primary goal: {inputs['patient_goal']}
-
-TASK:
-Generate a structured clinical reasoning summary in valid JSON. Return ONLY the JSON object, no preamble or markdown fences.
-
-The JSON must follow this exact schema:
-{{
-  "options": [
-    {{
-      "name": "string — short strategy name",
-      "description": "string — 2-3 sentence description of this approach",
-      "pros": ["string", "string", "string"],
-      "cons": ["string", "string", "string"],
-      "best_fit_when": "string — 1-2 sentences describing ideal patient profile for this strategy"
-    }}
-  ],
-  "comparative_reasoning": "string — 3-5 sentences comparing the options against each other given THIS patient's specific profile",
-  "decision_drivers": ["string", "string", "string"],
-  "suggested_direction": "string — 2-3 sentences of soft directional guidance, explicitly framed as non-definitive",
-  "uncertainty_note": "string — 1-2 sentences about key uncertainties or missing information that would change this analysis"
-}}
-
-Rules:
-- Generate 2 to 3 options (not more, not fewer)
-- Options must be meaningfully different strategies (e.g. conservative care vs revascularization-first vs amputation vs reconstruction)
-- Do NOT recommend one option with high confidence; acknowledge genuine tradeoffs
-- Be specific to this patient — avoid generic statements that would apply to any wound
-- Decision drivers must be the 3 most influential factors specific to this case
-- For any field marked "Unknown": do not assume or fabricate a value — instead explicitly flag it as a gap and explain how knowing it would change the reasoning
-- If many fields are Unknown, scale back the confidence of all options significantly and use the uncertainty_note to list the most important missing information needed before any management decision
-- If the input appears to be nonsensical, a joke, or clearly not a real clinical case, return options with name "Insufficient Clinical Information" and use the uncertainty_note to explain that a real case narrative is needed
-- Do not use medical jargon without brief clarification
-- Do not fabricate specific imaging findings or lab values not mentioned
-"""
-
-# ── Output renderer ───────────────────────────────────────────────────────────
-CARD_COLORS = ["", "amber", "blue"]
-
-def render_output(data: dict):
-    options = data.get("options", [])
-
-    st.markdown("<h2 style='color:#1a2332'>Management Options</h2>", unsafe_allow_html=True)
-    for i, opt in enumerate(options):
-        color = CARD_COLORS[i] if i < len(CARD_COLORS) else ""
-        pros_html = "".join(f"<li>{p}</li>" for p in opt.get("pros", []))
-        cons_html = "".join(f"<li>{c}</li>" for c in opt.get("cons", []))
-        st.markdown(f"""
-        <div class="option-card {color}">
-          <div class="tag">Option {i+1}</div>
-          <h3>{opt.get('name','')}</h3>
-          <p style="color:#444;font-size:0.92rem;margin-bottom:0.8rem">{opt.get('description','')}</p>
-          <div class="pro-con">
-            <div class="pros"><strong>✓ Pros</strong><ul style="margin:0.4rem 0 0;padding-left:1.2rem">{pros_html}</ul></div>
-            <div class="cons"><strong>✗ Cons</strong><ul style="margin:0.4rem 0 0;padding-left:1.2rem">{cons_html}</ul></div>
-          </div>
-          <p style="margin-top:0.9rem;font-size:0.85rem;color:#555"><strong>Best fit when:</strong> {opt.get('best_fit_when','')}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<h2 style='color:#1a2332'>Comparative Reasoning</h2>", unsafe_allow_html=True)
-    st.markdown(f"<div class='comp-reasoning'>{data.get('comparative_reasoning','')}</div>",
-                unsafe_allow_html=True)
-
-    st.markdown("<h2 style='color:#1a2332'>Key Decision Drivers</h2>", unsafe_allow_html=True)
-    drivers_html = "".join(f'<span class="driver-chip">{d}</span>' for d in data.get("decision_drivers", []))
-    st.markdown(f"<div style='margin:0.5rem 0 1rem'>{drivers_html}</div>", unsafe_allow_html=True)
-
-    st.markdown("<h2 style='color:#1a2332'>Suggested Direction</h2>", unsafe_allow_html=True)
-    st.markdown(f"""
-    <div class="rec-box">
-      <h4>⚖️ Soft Directional Guidance</h4>
-      <p style="margin:0;font-size:0.93rem;line-height:1.7;color:#1a2332">{data.get('suggested_direction','')}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown(f"""
-    <div class="disclaimer">
-      <strong>⚠️ Uncertainty note:</strong> {data.get('uncertainty_note','')}<br><br>
-      <strong>Fixed disclaimer:</strong> This tool is a prototype designed for educational and decision-support purposes only. It does not constitute clinical advice, diagnosis, or treatment recommendations. All management decisions must be made by qualified clinicians in the context of a complete patient evaluation. Do not use this output to guide real patient care.
-    </div>
-    """, unsafe_allow_html=True)
-
-# ── Main logic ────────────────────────────────────────────────────────────────
+# ── Analysis logic ────────────────────────────────────────────────────────────
 if analyze_btn:
     if not api_key:
-        st.error("Please enter your Anthropic API key in the sidebar.")
-    elif not case_narrative.strip() and chosen_sample == "— select —":
-        st.warning("Please enter a case narrative or load a sample case.")
+        st.error("Please enter your Anthropic API key.")
+    elif not case_narrative.strip():
+        st.warning("Please enter a case narrative.")
     else:
         inputs = {
             "narrative": case_narrative,
@@ -493,53 +507,30 @@ if analyze_btn:
             "comorbidities": comorbidities,
             "functional_status": functional_status,
             "operative_risk": operative_risk,
-            "ambulatory": ambulatory,
-            "vascular_status": vascular_status,
-            "prior_vasc": prior_vasc,
-            "wound_location": wound_location,
-            "wound_size": wound_size,
-            "wound_depth": wound_depth,
-            "infection": infection,
-            "tissue": tissue,
-            "chronicity": chronicity,
-            "pain": pain,
+            "clinical_setting": clinical_setting,
             "patient_goal": patient_goal,
         }
-
-        with st.spinner("Analyzing case — generating management options..."):
+        with st.spinner(f"Analyzing {module['label']} case..."):
             try:
                 client = anthropic.Anthropic(api_key=api_key)
                 response = client.messages.create(
                     model="claude-haiku-4-5-20251001",
                     max_tokens=4000,
-                    messages=[{"role": "user", "content": build_prompt(inputs)}]
+                    messages=[{"role": "user", "content": build_prompt(inputs, module)}]
                 )
                 raw = response.content[0].text.strip()
-
-                # Strip markdown fences if model adds them
                 raw = re.sub(r'^```(?:json)?\s*', '', raw)
                 raw = re.sub(r'\s*```$', '', raw)
-
                 data = json.loads(raw)
                 render_output(data)
-
             except json.JSONDecodeError as e:
-                st.error(f"Could not parse model response as JSON. Try again. ({e})")
-                with st.expander("Raw model output"):
+                st.error(f"Could not parse model response. Try again. ({e})")
+                with st.expander("Raw output"):
                     st.code(raw)
             except anthropic.AuthenticationError:
-                st.error("Invalid API key. Check your Anthropic API key and try again.")
+                st.error("Invalid API key.")
             except Exception as e:
-                st.error(f"An error occurred: {e}")
+                st.error(f"Error: {e}")
 
-else:
-    # Placeholder state
-    st.markdown("""
-    <div class="ready-state">
-      <div style="font-size:4rem">🫀</div>
-      <h3>Ready to analyze</h3>
-      <p>Fill in patient details in the sidebar, enter a case narrative above,
-        and click <strong style="color:#7ab0d4">Analyze Case</strong>.
-        Or load one of the built-in sample cases to explore the tool.</p>
-    </div>
-    """, unsafe_allow_html=True)
+elif not analyze_btn and not autofill_btn:
+    pass
