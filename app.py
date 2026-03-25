@@ -5,7 +5,7 @@ import re
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="CardioAdvisor",
+    page_title="ClinIQ",
     page_icon="🫀",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -264,7 +264,7 @@ st.markdown("""
 <div class="header-banner">
   <div style="font-size:3rem">🫀</div>
   <div>
-    <h1>CardioAdvisor</h1>
+    <h1>ClinIQ</h1>
     <p>Clinical decision-support for cardiology management &nbsp;·&nbsp; <em>Prototype — not for clinical use</em></p>
   </div>
 </div>
